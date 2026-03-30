@@ -148,7 +148,24 @@ async def broadcast_confirm_send(callback: CallbackQuery, state: FSMContext, bot
     # Получаем пользователей по выбранному параметру
     if selected_parameter == "all_users":
         user_ids = await sql.select_all_users()  # Получаем всех пользователей
-        keyboard_broadcast = create_kb(1, styles={'ref': STYLE_PRIMARY}, ref='🔗 Реферальная программа')
+        keyboard_broadcast = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="🛍️ Купить подписку",
+                        callback_data="buy_vpn",
+                        style=STYLE_SUCCESS,
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="🌐 Наш сайт",
+                        url="https://4region.top",
+                        style=STYLE_PRIMARY,
+                    )
+                ],
+            ]
+        )
     elif selected_parameter == 'not_connected_subscribe_yes':
         user_ids = await sql.select_not_connected_subscribe_yes()
         keyboard_broadcast = create_kb(
