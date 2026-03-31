@@ -1,7 +1,7 @@
 import urllib.parse
 
 from bot import sql
-from config import ADMIN_IDS
+from config import ADMIN_IDS, BOT_URL
 from keyboard import create_kb, keyboard_tariff, STYLE_PRIMARY, STYLE_SUCCESS, BTN_BACK
 from logging_config import logger
 import asyncio
