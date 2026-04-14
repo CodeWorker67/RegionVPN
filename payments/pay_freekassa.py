@@ -4,16 +4,10 @@ import json
 from typing import Any, Dict, Optional
 
 import aiohttp
-from aiogram import Router, F
-from aiogram.types import CallbackQuery
 
 from bot import sql
-from config import API_FREEKASSA, SHOP_ID_FREEKASSA, FREEKASSA_SERVER_IP, ADMIN_IDS
-from keyboard import keyboard_payment_sbp, create_kb, BTN_BACK, BTN_PAY_SBP
-from lexicon import dct_price, dct_desc, lexicon
+from config import API_FREEKASSA, SHOP_ID_FREEKASSA, FREEKASSA_SERVER_IP
 from logging_config import logger
-
-router = Router()
 
 FK_API_BASE = "https://api.fk.life/v1"
 FK_PAYMENT_SBP_QR = 44
@@ -214,69 +208,4 @@ async def pay_for_gift(val: str, des: str, user_id: str, duration: str, white: b
         return {"status": "error", "url": "", "id": ""}
 
 
-@router.callback_query(F.data.startswith('sbp_'))
-async def process_payment_sbp_fk(callback: CallbackQuery):
-    await callback.answer()
-    gift_flag = False
-    white_flag = False
-    if 'gift_' in callback.data:
-        gift_flag = True
-    duration = callback.data.replace('sbp_r_', '').replace('sbp_gift_r_', '')
-    desc_key = duration
-
-    rub_amount = dct_price[duration]
-    if callback.from_user.id in ADMIN_IDS:
-        rub_amount = 10
-    user_id = str(callback.from_user.id)
-
-    if 'white' in duration:
-        duration = duration.replace('white_', '')
-        white_flag = True
-    if 'old' in duration:
-        duration = duration.replace('old', '')
-
-    if gift_flag:
-        payment_info = await pay_for_gift(
-            val=str(rub_amount),
-            des=f"Подписка в подарок {dct_desc[desc_key]}",
-            user_id=user_id,
-            duration=duration,
-            white=white_flag,
-        )
-    else:
-        payment_info = await pay(
-            val=str(rub_amount),
-            des=dct_desc[desc_key],
-            user_id=user_id,
-            duration=duration,
-            white=white_flag,
-        )
-
-    if payment_info['status'] == 'pending' and payment_info.get('url'):
-        try:
-            text = lexicon['payment_link']
-            if white_flag:
-                text = lexicon['payment_link_white']
-            if 'gift' in callback.data:
-                text += '\n\nДля оплаты <b>подарочной подписки</b> перейдите по ссылке (СБП FreeKassa):'
-            else:
-                text += '\n\nДля оплаты тарифа перейдите по ссылке (СБП FreeKassa):'
-            await callback.message.edit_text(
-                text=text,
-                parse_mode='HTML',
-                reply_markup=keyboard_payment_sbp(BTN_PAY_SBP, payment_info['url']),
-            )
-            logger.info(
-                f"Юзер {user_id} создал счёт FreeKassa СБП {'подарка' if gift_flag else ''} {rub_amount} руб")
-
-        except Exception as e:
-            error_message = f"Ошибка при создании счета: {str(e)}"
-            logger.error(error_message)
-            await callback.message.answer(lexicon['error_payment'], reply_markup=create_kb(1, back_to_main=BTN_BACK))
-    elif payment_info['status'] == 'pending' and not payment_info.get('url'):
-        await callback.message.answer(
-            "Счёт создан, но ссылка на оплату пуста. Обратитесь в поддержку.",
-            reply_markup=create_kb(1, back_to_main=BTN_BACK),
-        )
-    else:
-        await callback.message.answer(lexicon['error_payment'], reply_markup=create_kb(1, back_to_main=BTN_BACK))
+# СБП переведён на WATA (pay_wata); хендлер FreeKassa СБП отключён (check_fk остаётся для старых pending).

@@ -16,7 +16,7 @@ async def process_confirmed_payment(payload):
         white_flag = payload_parts.get('white', 'False') == 'True'
         is_gift = payload_parts.get('gift', 'False') == 'True'
         method = payload_parts.get('method', '')
-        if method in ('sbp', 'fksbp', 'stars', 'card', 'crypto', 'cryptobot'):
+        if method in ('sbp', 'fksbp', 'stars', 'card', 'crypto', 'cryptobot', 'wata_sbp', 'wata_card'):
             amount = int(payload_parts.get('amount', 0))
         else:
             amount = float(payload_parts.get('amount', 0.0))
@@ -26,7 +26,7 @@ async def process_confirmed_payment(payload):
             f"gift={is_gift}, method={method}, amount={amount}")
 
         # Определяем валюту для сообщения
-        if method in ['sbp', 'fksbp', 'card', 'crypto', 'cryptobot']:
+        if method in ['sbp', 'fksbp', 'card', 'crypto', 'cryptobot', 'wata_sbp', 'wata_card']:
             currency = 'руб'
         elif method == 'stars':
             currency = '⭐️'

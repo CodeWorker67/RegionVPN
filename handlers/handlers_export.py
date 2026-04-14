@@ -36,6 +36,8 @@ async def export_database_to_excel(message: Message):
             payments_stars_list = snapshot["payments_stars"]
             payments_cryptobot_list = snapshot["payments_cryptobot"]
             payments_fk_sbp_list = snapshot["payments_fk_sbp"]
+            payments_wata_sbp_list = snapshot["payments_wata_sbp"]
+            payments_wata_card_list = snapshot["payments_wata_card"]
             gifts_list = snapshot["gifts"]
             online_list = snapshot["online"]
             white_counter_list = snapshot["white_counter"]
@@ -149,6 +151,54 @@ async def export_database_to_excel(message: Message):
                     if cell.value:
                         max_len = max(max_len, len(str(cell.value)))
                 ws_fk_sbp.column_dimensions[col_letter].width = min(max_len + 2, 50)
+
+            wata_columns = ['ID', 'User ID', 'Amount', 'Time Created', 'Is Gift', 'Status', 'Transaction_Id', 'Payload']
+
+            ws_wata_sbp = wb.create_sheet(title="payments_wata_sbp")
+            for col_num, title in enumerate(wata_columns, 1):
+                cell = ws_wata_sbp.cell(row=1, column=col_num, value=title)
+                cell.alignment = header_alignment
+                cell.border = thin_border
+            for row_num, pay in enumerate(payments_wata_sbp_list, 2):
+                row_data = [
+                    pay.id, pay.user_id, pay.amount, pay.time_created,
+                    pay.is_gift, pay.status, pay.transaction_id, pay.payload,
+                ]
+                for col_num, value in enumerate(row_data, 1):
+                    if col_num == 4 and value and isinstance(value, datetime):
+                        value = value.strftime('%Y-%m-%d %H:%M:%S')
+                    cell = ws_wata_sbp.cell(row=row_num, column=col_num, value=value)
+                    cell.border = thin_border
+            for col in ws_wata_sbp.columns:
+                max_len = 0
+                col_letter = col[0].column_letter
+                for cell in col:
+                    if cell.value:
+                        max_len = max(max_len, len(str(cell.value)))
+                ws_wata_sbp.column_dimensions[col_letter].width = min(max_len + 2, 50)
+
+            ws_wata_card = wb.create_sheet(title="payments_wata_card")
+            for col_num, title in enumerate(wata_columns, 1):
+                cell = ws_wata_card.cell(row=1, column=col_num, value=title)
+                cell.alignment = header_alignment
+                cell.border = thin_border
+            for row_num, pay in enumerate(payments_wata_card_list, 2):
+                row_data = [
+                    pay.id, pay.user_id, pay.amount, pay.time_created,
+                    pay.is_gift, pay.status, pay.transaction_id, pay.payload,
+                ]
+                for col_num, value in enumerate(row_data, 1):
+                    if col_num == 4 and value and isinstance(value, datetime):
+                        value = value.strftime('%Y-%m-%d %H:%M:%S')
+                    cell = ws_wata_card.cell(row=row_num, column=col_num, value=value)
+                    cell.border = thin_border
+            for col in ws_wata_card.columns:
+                max_len = 0
+                col_letter = col[0].column_letter
+                for cell in col:
+                    if cell.value:
+                        max_len = max(max_len, len(str(cell.value)))
+                ws_wata_card.column_dimensions[col_letter].width = min(max_len + 2, 50)
 
             # --- Лист PAYMENTS_CARDS (платежи по картам) ---
             ws_payments_cards = wb.create_sheet(title="payments_cards")
@@ -344,7 +394,7 @@ async def export_database_to_excel(message: Message):
                 ws_white_counter.column_dimensions[col_letter].width = min(max_len + 2, 50)
             
             # Заморозка заголовков
-            for ws in [ws_users, ws_payments, ws_fk_sbp, ws_payments_cards, ws_payments_stars, ws_platega_crypto,
+            for ws in [ws_users, ws_payments, ws_fk_sbp, ws_wata_sbp, ws_wata_card, ws_payments_cards, ws_payments_stars, ws_platega_crypto,
                        ws_payments_cryptobot, ws_gifts, ws_online, ws_white_counter]:
                 ws.freeze_panes = ws['A2']
 
@@ -362,6 +412,8 @@ async def export_database_to_excel(message: Message):
         payments_platega_crypto_list = snapshot["payments_platega_crypto"]
         payments_cryptobot_list = snapshot["payments_cryptobot"]
         payments_fk_sbp_list = snapshot["payments_fk_sbp"]
+        payments_wata_sbp_list = snapshot["payments_wata_sbp"]
+        payments_wata_card_list = snapshot["payments_wata_card"]
 
         users_count = len(users_list)
         gifts_count = len(gifts_list)
@@ -384,6 +436,10 @@ async def export_database_to_excel(message: Message):
         successful_cryptobot_count = sum(1 for p in payments_cryptobot_list if p.status == "paid")
         successful_fk_sbp_count = sum(1 for p in payments_fk_sbp_list if p.status == "confirmed")
         fk_sbp_count = len(payments_fk_sbp_list)
+        successful_wata_sbp_count = sum(1 for p in payments_wata_sbp_list if p.status == "confirmed")
+        wata_sbp_count = len(payments_wata_sbp_list)
+        successful_wata_card_count = sum(1 for p in payments_wata_card_list if p.status == "confirmed")
+        wata_card_count = len(payments_wata_card_list)
 
         try:
             now_s = datetime.now().strftime('%d.%m.%Y %H:%M')
@@ -393,7 +449,9 @@ async def export_database_to_excel(message: Message):
                 "📊 Краткая сводка по платежам:\n"
                 f"├ 👥 Пользователей: {users_count}\n"
                 f"├ 🎁 Подарков: {gifts_count}\n"
-                f"├ 📲 FreeKassa СБП: {successful_fk_sbp_count}/{fk_sbp_count}\n"
+                f"├ 📲 FreeKassa СБП (архив): {successful_fk_sbp_count}/{fk_sbp_count}\n"
+                f"├ ⚡ WATA СБП: {successful_wata_sbp_count}/{wata_sbp_count}\n"
+                f"├ 💳 WATA Карта: {successful_wata_card_count}/{wata_card_count}\n"
                 f"├ ⚡ Platega СБП (архив): {successful_payments_count}/{payments_count}\n"
                 f"├ 💳 Platega Карта: {successful_cards_count}/{payments_cards_count}\n"
                 f"├ ⭐ Stars: {successful_stars_count}/{payments_stars_count}\n"

@@ -29,4 +29,7 @@ DOCUMENT_URL_2: Optional[str] = os.environ.get("DOCUMENT_URL_2")
 TRUE_SUB_LINK: Optional[str] = os.environ.get("TRUE_SUB_LINK")
 MIRROR_SUB_LINK: Optional[str] = os.environ.get("MIRROR_SUB_LINK")
 SHORT_UUID_SECRET: Optional[str] = os.environ.get("SHORT_UUID_SECRET")
+WATA_API_SBP_KEY: Optional[str] = os.environ.get("WATA_API_SBP_KEY")
+WATA_API_CARD_KEY: Optional[str] = os.environ.get("WATA_API_CARD_KEY")
+WATA_API_BASE: str = os.environ.get("WATA_API_BASE", "https://api.wata.pro/api/h2h").rstrip("/")
 
