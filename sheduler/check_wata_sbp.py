@@ -5,10 +5,15 @@ from config import WATA_API_SBP_KEY
 from keyboard import keyboard_payment_cancel
 from lexicon import lexicon
 from logging_config import logger
-from payments.pay_wata import WataPayment, wata_order_payment_state, wata_transactions_status_counts
+from payments.pay_wata import (
+    WATA_DECLINED_CANCEL_GRACE_AFTER_LINK,
+    WataPayment,
+    wata_order_payment_state,
+    wata_transactions_status_counts,
+)
 from payments.process_payload import process_confirmed_payment
 
-_EMPTY_API_EXPIRE = timedelta(days=1)
+_EMPTY_API_EXPIRE = timedelta(hours=12)
 
 
 async def process_confirmed_wata_sbp(payment) -> None:
@@ -64,7 +69,7 @@ async def check_wata_sbp() -> None:
                 ):
                     await sql.update_wata_sbp_status(order_id, "canceled")
                     logger.info(
-                        f"🔄 WATA СБП orderId={order_id} → canceled (нет транзакций в API > {_EMPTY_API_EXPIRE.days} дн)"
+                        f"🔄 WATA СБП orderId={order_id} → canceled (нет транзакций в API > {int(_EMPTY_API_EXPIRE.total_seconds() // 3600)} ч)"
                     )
                     canceled += 1
                     await _notify_wata_sbp_cancel(payment.user_id)
@@ -81,12 +86,25 @@ async def check_wata_sbp() -> None:
                         confirmed += 1
                     processed += 1
                 elif state in ("declined", "wrong_paid"):
-                    if payment.status != "canceled":
+                    if (
+                        state == "declined"
+                        and tc is not None
+                        and datetime.now() - tc < WATA_DECLINED_CANCEL_GRACE_AFTER_LINK
+                    ):
+                        logger.info(
+                            f"WATA СБП orderId={order_id}: declined в API, записи < "
+                            f"{int(WATA_DECLINED_CANCEL_GRACE_AFTER_LINK.total_seconds() // 60)} мин — "
+                            "отмену в БД не делаем (ждём Paid)"
+                        )
+                        processed += 1
+                    elif payment.status != "canceled":
                         await sql.update_wata_sbp_status(order_id, "canceled")
                         logger.info(f"🔄 WATA СБП orderId={order_id} → canceled ({state})")
                         canceled += 1
                         await _notify_wata_sbp_cancel(payment.user_id)
-                    processed += 1
+                        processed += 1
+                    else:
+                        processed += 1
                 else:
                     processed += 1
 

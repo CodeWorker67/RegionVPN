@@ -89,6 +89,10 @@ _WATA_TYPES_CARD_FLOW = frozenset({"CardCrypto", "TPay", "SberPay"})
 
 _WATA_STALE_OPEN_MAX_AGE = timedelta(hours=72)
 
+# Не ставим canceled в БД по «только declined» в API раньше этого срока с момента создания записи:
+# у WATA иногда сначала приходит Declined, а оплата появляется через короткое время.
+WATA_DECLINED_CANCEL_GRACE_AFTER_LINK = timedelta(minutes=30)
+
 
 def _wata_norm_status(x: dict) -> str:
     return (x.get("status") or x.get("Status") or "").strip().lower()
